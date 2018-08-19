@@ -22,4 +22,5 @@ script: ./gradlew connectedAndroidTest
 
 branches:
 only:
-- gh-pages
+- master
+- /^deploy-.*$/
