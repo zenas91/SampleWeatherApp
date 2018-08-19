@@ -27,8 +27,3 @@ android:
     - extra-android-m2repository
     # Specify at least one system image,
     - sys-img-armeabi-v7a-addon-google_apis-google-$ANDROID_API_LEVEL
-
-
-script:
-  - ./wait_for_emulator
-  - ./gradlew connectedCheck -PdisablePreDex
