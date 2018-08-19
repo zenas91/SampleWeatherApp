@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">Weather App Test</string>
+    <string name="app_name">Sample Weather App</string>
+    <string name="location">Click Here to Change Location</string>
 </resources>

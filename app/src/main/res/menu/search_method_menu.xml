@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item android:id="@+id/currentLocation" android:title="Current Location"></item>
+        <item android:id="@+id/locationBerlin" android:title="Berlin"></item>
+        <item android:id="@+id/locationStuttgart" android:title="Stuttgart"></item>
+        <item android:id="@+id/locationFrankfurt" android:title="Frankfurt"></item>
+    </group>
+</menu>
