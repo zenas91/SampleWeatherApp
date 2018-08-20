@@ -1,39 +1,29 @@
 package com.zenas.weatherapptest;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Address;
-import android.location.Criteria;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.Build;
 import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.ContextMenu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -49,30 +39,44 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private double longitude;
     private LocationManager locationmanager;
     String cityName;
+    private final static int REQUEST_LOCATION = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         city = findViewById(R.id.city);
-        locationmanager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
+
+        try {
+            getCity();
+            getWoeid();
+            changeLocation();
+        } catch(NullPointerException e){
+            e.printStackTrace();
         }
-        Location location = locationmanager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-        //onLocationChanged(location);
-        getCity(location);
-        getWoeid();
-        changeLocation();
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            // This is Case 2 (Permission is now granted)
+            getCity();
+        } else {
+            // This is Case 1 again as Permission is not granted by user
+            //Now further we check if used denied permanently or not
+            if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this,
+                    Manifest.permission.ACCESS_FINE_LOCATION)) {
+                // case 4 User has denied permission but not permanently
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION);
+            } else {
+                // case 5. Permission denied permanently.
+                // You can open Permission setting's page from here now.
+                Toast.makeText(this,"Please go to Setting and Turn on Location Service to get The Weather for Your Current Location",Toast.LENGTH_LONG).show();
+            }
+
+        }
+    }
     @Override
     public void onLocationChanged(Location location) {
 //       TextView city = findViewById(R.id.city);
@@ -95,20 +99,39 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     }
 
-    public void getCity(Location location){
+    public void getCity(){
+        if(ActivityCompat.checkSelfPermission(this.getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this.getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED){
 
-        try{
-            latitude = location.getLatitude();
-            longitude = location.getLongitude();
-            Geocoder geocoder = new Geocoder(this);
-            List<Address> addresses;
+            //Toast.makeText(this, "Permission to Location is Needed to Get the Weather for Your Current Location", Toast.LENGTH_LONG).show();
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION);
+        }else{
+            locationmanager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            Location location = locationmanager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            if(location != null){
+                try{
 
-            addresses = geocoder.getFromLocation(latitude, longitude, 1);
-            cityName = addresses.get(0).getLocality().toString();
-            city.setText(cityName);
-        }catch(IOException e){
-            e.printStackTrace();
-            Toast.makeText(getApplicationContext(), "Error", Toast.LENGTH_SHORT).show();
+                    latitude = location.getLatitude();
+                    longitude = location.getLongitude();
+                    Geocoder geocoder = new Geocoder(this);
+                    List<Address> addresses;
+
+                    addresses = geocoder.getFromLocation(latitude, longitude, 1);
+                    cityName = addresses.get(0).getLocality().toString();
+                    city.setText(cityName);
+
+
+                }catch(NullPointerException e){
+                    e.printStackTrace();
+                    Toast.makeText(getApplicationContext(), "Error", Toast.LENGTH_SHORT).show();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Toast.makeText(getApplicationContext(), "Error", Toast.LENGTH_SHORT).show();
+                }
+            }else{
+                Toast.makeText(this.getApplicationContext(), "Current Coordinate not Found", Toast.LENGTH_SHORT);
+            }
         }
     }
     public void onLocationButtonClick(View view) {
@@ -190,7 +213,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
                         String approxCurrentWeather = currentWeather.substring(0, Math.min(currentWeather.length(), 2));
                         temperature.setText(approxCurrentWeather + "°");
-                       // weatherStatus.setText(weatherName);
+                        weatherStatus.setText(weatherName);
                     } else {
                         Toast.makeText(getApplicationContext(), "No Record Found", Toast.LENGTH_SHORT).show();
                     }
@@ -256,18 +279,20 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     public boolean onContextItemSelected(MenuItem item) {
         TextView city = findViewById(R.id.city);
         TextView lastWeek = findViewById(R.id.lastWeek);
-        locationmanager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        @SuppressLint("MissingPermission") Location location = locationmanager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        //locationmanager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        //@SuppressLint("MissingPermission") Location location = locationmanager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
         switch (item.getItemId()) {
             case R.id.currentLocation:
                 item_selected = 1;
                 //location = "651092";
                 //onLocationChanged(location);
                 try {
-                    getCity(location);
+                    getCity();
                     getWoeid();
                     TimeUnit.SECONDS.sleep(2);
                 } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch(NullPointerException e){
                     e.printStackTrace();
                 }
                 changeLocation();
