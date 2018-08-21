@@ -11,7 +11,7 @@
         android:id="@+id/lastWeek"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text=" Last Week: 13°"
+        android:text="Last Week: 0°"
         android:textSize="24sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"

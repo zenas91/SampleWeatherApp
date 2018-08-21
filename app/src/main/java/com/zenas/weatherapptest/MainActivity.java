@@ -35,6 +35,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private int item_selected = 1;
     private String locationwoied;
     private TextView city;
+    private TextView lastWeek;
+    private TextView weatherStatus;
+    private TextView temperature;
     private double latitude;
     private double longitude;
     private LocationManager locationmanager;
@@ -139,7 +142,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         openContextMenu(view);
     }
 
-    public String getWoeid(){
+    public void getWoeid(){
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://www.metaweather.com/")
@@ -161,7 +164,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                                 replaceAll("\\]","").trim();
                         locationwoied = currentWeather;
                     } else {
+                        locationwoied = "";
                         Toast.makeText(getApplicationContext(), "Weather Information for this Location is Currently not Available", Toast.LENGTH_SHORT).show();
+                        temperature = findViewById(R.id.temperature);
+                        weatherStatus = findViewById(R.id.weatherStatus);
+                        lastWeek = findViewById(R.id.lastWeek);
+                        temperature.setText("0°");
+                        weatherStatus.setText("Weather Status");
+                        lastWeek.setText("Last Week: 0°");
                     }
                 } catch (NullPointerException e) {
                     e.printStackTrace();
@@ -173,7 +183,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
             }
         });
-        return locationwoied;
+        //return locationwoied;
     }
 
     public void changeLocation() {
@@ -198,8 +208,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     List<WeatherDTO> weather = response.body();
                     if (weather.isEmpty() != true) {
 
-                        TextView weatherStatus = findViewById(R.id.weatherStatus);
-                        TextView temperature = findViewById(R.id.temperature);
+                        weatherStatus = findViewById(R.id.weatherStatus);
+                        temperature = findViewById(R.id.temperature);
                         String[] specifiedWeather = new String[weather.size()];
                         Double[] specifiedTemp = new Double[weather.size()];
                         specifiedWeather[specifiedWeather.length -1] = weather.get(weather.size() - 1).getWeatherStateName();
@@ -230,19 +240,24 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         caller.enqueue(new Callback<List<WeatherDTO>>() {
             @Override
             public void onResponse(Call<List<WeatherDTO>> call, Response<List<WeatherDTO>> response) {
+
                 try {
                     List<WeatherDTO> weather = response.body();
-                    TextView lastWeek = findViewById(R.id.lastWeek);
-                    Double[] specifiedTemp = new Double[weather.size()];
-                    specifiedTemp[0] = weather.get(0).getTheTemp();
-                    String currentWeather = String.join("", Arrays.toString(specifiedTemp))
-                            .replaceAll("null", "").replaceAll(",", "")
-                            .replaceAll(" ", "").replaceAll("\\[", "")
-                            .replaceAll("\\]", "");
-                    String approxCurrentWeather = currentWeather.substring(0, Math.min(currentWeather.length(), 2));
-                    lastWeek.setText("Last Week: " + approxCurrentWeather + "°");
+                    if (weather.isEmpty() != true) {
+                        TextView lastWeek = findViewById(R.id.lastWeek);
+                        Double[] specifiedTemp = new Double[weather.size()];
+                        specifiedTemp[0] = weather.get(0).getTheTemp();
+                        String currentWeather = String.join("", Arrays.toString(specifiedTemp))
+                                .replaceAll("null", "").replaceAll(",", "")
+                                .replaceAll(" ", "").replaceAll("\\[", "")
+                                .replaceAll("\\]", "");
+                        String approxCurrentWeather = currentWeather.substring(0, Math.min(currentWeather.length(), 2));
+                        lastWeek.setText("Last Week: " + approxCurrentWeather + "°");
+                    }else{
+                        Toast.makeText(getApplicationContext(), "Weather Not Available for Your Current Location", Toast.LENGTH_SHORT).show();
+                    }
                 } catch (NullPointerException e) {
-                    Toast.makeText(getApplicationContext(), "Weather Not Available for Your Current Location", Toast.LENGTH_SHORT).show();
+                    e.printStackTrace();
                 }
             }
 
@@ -251,6 +266,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 Toast.makeText(getApplicationContext(), t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
+        locationwoied = "";
     }
 
 
@@ -295,7 +311,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 } catch(NullPointerException e){
                     e.printStackTrace();
                 }
-                changeLocation();
+                if(locationwoied.isEmpty()== false){
+                    changeLocation();
+                }
                 lastWeek.setVisibility(View.VISIBLE);
                 return true;
 
